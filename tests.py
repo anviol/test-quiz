@@ -1,13 +1,27 @@
 import pytest
 from model import Question
 
+@pytest.fixture
+def empty_question():
+    return Question(title='q1')
 
-def test_create_question():
-    question = Question(title='q1')
+@pytest.fixture
+def question_with_correct_choices():
+    question = Question(title='q1', max_selections=2)
+    question.add_choice('a')
+    question.add_choice('b')
+    question.add_choice('c') 
+
+    question.set_correct_choices([1])
+
+    return question
+
+def test_create_question(empty_question):
+    question = empty_question
     assert question.id != None
 
-def test_create_multiple_questions():
-    question1 = Question(title='q1')
+def test_create_multiple_questions(empty_question):
+    question1 = empty_question
     question2 = Question(title='q2')
     assert question1.id != question2.id
 
@@ -25,8 +39,8 @@ def test_create_question_with_valid_points():
     question = Question(title='q1', points=100)
     assert question.points == 100
 
-def test_create_choice():
-    question = Question(title='q1')
+def test_create_choice(empty_question):
+    question = empty_question
     
     question.add_choice('a', False)
 
@@ -36,8 +50,8 @@ def test_create_choice():
     assert not choice.is_correct
 
 
-def test_add_multiple_choices_generates_incremental_ids():
-    question = Question(title='q1')
+def test_add_multiple_choices_generates_incremental_ids(empty_question):
+    question = empty_question
     c1 = question.add_choice('a')
     c2 = question.add_choice('b')
     c3 = question.add_choice('c')
@@ -48,8 +62,8 @@ def test_add_multiple_choices_generates_incremental_ids():
     assert c3.id == 3
 
 
-def test_remove_choice_by_id_removes_choice():
-    question = Question(title='q1')
+def test_remove_choice_by_id_removes_choice(empty_question):
+    question = empty_question
     question.add_choice('a')
     question.add_choice('b')
 
@@ -59,16 +73,16 @@ def test_remove_choice_by_id_removes_choice():
     assert question.choices[0].text == 'b'
 
 
-def test_remove_choice_by_invalid_id_raises():
-    question = Question(title='q1')
+def test_remove_choice_by_invalid_id_raises(empty_question):
+    question = empty_question
     question.add_choice('a')
 
     with pytest.raises(Exception, match='Invalid choice id'):
         question.remove_choice_by_id(99)
 
 
-def test_remove_all_choices_clears_list():
-    question = Question(title='q1')
+def test_remove_all_choices_clears_list(empty_question):
+    question = empty_question
     question.add_choice('a')
     question.add_choice('b')
 
@@ -77,8 +91,8 @@ def test_remove_all_choices_clears_list():
     assert question.choices == []
 
 
-def test_set_correct_choices_marks_correct_options():
-    question = Question(title='q1')
+def test_set_correct_choices_marks_correct_options(empty_question):
+    question = empty_question
     question.add_choice('a')
     question.add_choice('b')
     question.add_choice('c')
@@ -105,8 +119,8 @@ def test_correct_selected_choices_exceed_max_selections_raises():
     assert 'Cannot select more than 2 choices' in error_msg
 
 
-def test_choice_text_empty_raises_exception():
-    question = Question(title='q1')
+def test_choice_text_empty_raises_exception(empty_question):
+    question = empty_question
     error_msg = None
     try:
         question.add_choice('', False)
@@ -117,8 +131,8 @@ def test_choice_text_empty_raises_exception():
     assert 'Text cannot be empty' in error_msg
 
 
-def test_choice_text_too_long_raises_exception():
-    question = Question(title='q1')
+def test_choice_text_too_long_raises_exception(empty_question):
+    question = empty_question
     error_msg = None
     try:
         question.add_choice('x' * 101)
@@ -158,3 +172,18 @@ def test_correct_selected_choices_returns_only_selected_correct_ids():
     result = question.correct_selected_choices([1, 2])
 
     assert result == [1]
+
+def test_correct_selected_choices_all_correct(question_with_correct_choices):
+    result = question_with_correct_choices.correct_selected_choices([1])
+
+    assert result == [1]
+
+def test_correct_selected_choices_all_correct(question_with_correct_choices):
+    result = question_with_correct_choices.correct_selected_choices([2])
+
+    assert result == []
+
+def test_correct_selected_choices_none_correct(question_with_correct_choices):
+    result = question_with_correct_choices.correct_selected_choices([3])
+
+    assert result == []
